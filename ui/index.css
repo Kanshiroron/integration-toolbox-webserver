@@ -1,0 +1,41 @@
+#icon {
+  display: inline;
+  width: 128px;
+  height: 128px;
+  margin-right: 20px;
+}
+
+.top-space {
+  margin-top: 30px;
+}
+
+.form-group {
+  margin-top: 20px;
+}
+
+.hidden-form-part {
+  display: none;
+}
+
+.result {
+  display: none;
+  margin-top: 20px;
+}
+
+#downloadProgressBar,
+#uploadProgressBar {
+  display: none;
+}
+
+.social img {
+  width: 32px;
+  height: 32px;
+}
+.social img:hover {
+  opacity: 50%;
+  transition-duration: 500ms;
+}
+
+.credits {
+  font-size: 0.75em;
+}

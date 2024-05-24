@@ -1,0 +1,897 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Integration Toolbox Server</title>
+    <link rel="icon" type="image/x-icon" href="./favicon.ico">
+    <link href="./bootstrap-5.3.3.css" rel="stylesheet" integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH">
+    <link href="./index.css" rel="stylesheet">
+    <script type="text/javascript" src="./bootstrap-5.3.3.js" integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"></script>
+    <script type="text/javascript" src="./index.js"></script>
+  </head>
+  <body onload="bodyOnLoad()">
+    <!-- title -->
+    <div class="position-relative container top-space">
+      <div class="row">
+        <div class="col d-flex align-items-center">
+        <img src="./icon.png" class="float-start" id="icon" alt="Integration Toolbox WebServer icon" />
+        <h1>Integration Toolbox WebServer</h1>
+        </div>
+      </div>
+    </div>
+    <!-- welcome message -->
+    <div class="position-relative container top-space">
+      <p><strong>Welcome to the Integration Toolbox WebServer UI!</strong><br />Here you will be able to test some endpoints of the application.<br />The documentation is available on the <a href="https://github.com/kanshiroron/integration-toolbox-webserver" target="_blank">GitHub project page</a>.</p>
+    </div>
+    <div class="position-relative container top-space">
+      <div class="accordion" id="endpoints">
+        <!-- crash -->
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#crash" aria-controls="crash">
+              <strong>/crash</strong>
+            </button>
+          </h2>
+          <div id="crash" class="accordion-collapse collapse" data-bs-parent="#endpoints">
+            <div class="accordion-body">
+              <div class="mb-3">
+                <strong class="text-primary">GET</strong><br />
+                <span class="text-primary">Asks the server to crash.</span>
+                <form>
+                  <div class="form-group">
+                    <label for="crashExitCode" class="form-label">Exit code</label>
+                    <input type="number" min="0" step="1" class="form-control" id="crashExitCode" aria-describedby="crashExitCodeHelp">
+                    <div id="crashExitCodeHelp" class="form-text">Optional (defaults to 1), that exit code the server should crash with.</div>
+                  </div>
+                  <div class="form-group">
+                    <label for="crashTimeout" class="form-label">Timeout</label>
+                    <input type="text" class="form-control" id="crashTimeout" aria-describedby="crashTimeoutHelp">
+                    <div id="crashTimeoutHelp" class="form-text">Optional (defaults to 1s), delay server crashes. Must be in <a href="https://pkg.go.dev/time#ParseDuration" target="_blank">Golang duration format</a>.</div>
+                  </div>
+                  <div class="form-group d-flex justify-content-end">
+                    <button type="button" class="btn btn-outline-secondary float-right" onclick="crash(this, document.getElementById('crashResult'));">Crash</button>
+                  </div>
+                </form>
+              </div>
+              <div class="mb-3">
+                <p id="crashResult" class="result"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- download -->
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#download" aria-expanded="false" aria-controls="download">
+              <strong>/download</strong>
+            </button>
+          </h2>
+          <div id="download" class="accordion-collapse collapse" data-bs-parent="#endpoints">
+            <div class="accordion-body">
+              <div class="mb-3">
+                <strong class="text-primary">GET</strong><br />
+                <span class="text-primary">Asks the server to generate data to download (full of 0x00 bytes).</span>
+                <form>
+                  <div class="form-group">
+                    <label for="downloadSize" class="form-label">Size</label>
+                    <input type="number" min="0" step="1" class="form-control" id="downloadSize" aria-describedby="downloadSizeHelp">
+                    <div id="downloadSizeHelp" class="form-text">Optional (defaults to 1MiB), size of the content to download (in bytes).</div>
+                  </div>
+                  <div class="form-group d-flex justify-content-end">
+                    <button type="button" class="btn btn-outline-secondary" onclick="download(this, document.getElementById('downloadResult'));">Download</button>
+                  </div>
+                </form>
+              </div>
+              <div class="mb-3">
+                <div id="downloadProgressBar" class="progress" role="progressbar" aria-label="Default striped example" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                  <div id="downloadProgressBarProgress" class="progress-bar progress-bar-striped"></div>
+                </div>
+                <p id="downloadResult" class="result"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- sleep -->
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#sleep" aria-controls="sleep">
+              <strong>/sleep</strong>
+            </button>
+          </h2>
+          <div id="sleep" class="accordion-collapse collapse" data-bs-parent="#endpoints">
+            <div class="accordion-body">
+              <div class="mb-3">
+                <strong class="text-primary">GET</strong><br />
+                <span class="text-primary">Asks the server's endpoint to sleep for some time before answering.</span>
+                <form>
+                  <div class="form-group">
+                    <label for="sleepDuration" class="form-label">Duration</label>
+                    <input type="text" class="form-control" id="sleepDuration" aria-describedby="sleepDurationHelp">
+                    <div id="sleepDurationHelp" class="form-text">Optional (defaults to 1 second), duration of the sleep. Must be in <a href="https://pkg.go.dev/time#ParseDuration" target="_blank">Golang duration format</a>.</div>
+                  </div>
+                  <div class="form-group">
+                    <label for="sleepStatusCode" class="form-label">Status code</label>
+                    <input type="number" min="100" max="599" step="1" class="form-control" id="sleepStatusCode" aria-describedby="sleepStatusCodeHelp">
+                    <div id="sleepStatusCodeHelp" class="form-text">Optional (defaults to 200), status code the server should send once the sleep is over.</div>
+                  </div>
+                  <div class="form-group d-flex justify-content-end">
+                    <button type="button" class="btn btn-outline-secondary" onclick="sleep(this, document.getElementById('sleepResult'));">Sleep</button>
+                  </div>
+                </form>
+              </div>
+              <div class="mb-3">
+                <p id="sleepResult" class="result"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- status code -->
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#status" aria-controls="status">
+              <strong>/status_code</strong>
+            </button>
+          </h2>
+          <div id="status" class="accordion-collapse collapse" data-bs-parent="#endpoints">
+            <div class="accordion-body">
+              <div class="mb-3">
+                <strong class="text-primary">GET</strong><br />
+                <span class="text-primary">Asks the server to return the asked status code.</span>
+                <form>
+                  <div class="form-group">
+                    <label for="statusCodeCode" class="form-label">Status code</label>
+                    <input type="number" min="100" max="599" value="200" step="1" class="form-control" id="statusCodeCode" aria-describedby="statusCodeCodeHelp">
+                    <div id="statusCodeCodeHelp" class="form-text">Mandatory, status code the server should answer with.</div>
+                  </div>
+                  <div class="form-group d-flex justify-content-end">
+                    <button type="button" class="btn btn-outline-secondary" onclick="statusCode(this, document.getElementById('statusCodeResult'));">Go</button>
+                  </div>
+                </form>
+              </div>
+              <div class="mb-3">
+                <p id="statusCodeResult" class="result"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- upload -->
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#upload" aria-controls="upload">
+              <strong>/upload</strong>
+            </button>
+          </h2>
+          <div id="upload" class="accordion-collapse collapse" data-bs-parent="#endpoints">
+            <div class="accordion-body">
+              <div class="mb-3">
+                <strong class="text-primary">POST</strong><br />
+                <span class="text-primary">Uploads a file to the server (it will not be saved by it).</span>
+                <form>
+                  <div class="form-group">
+                    <label for="uploadFile" class="form-label">File</label>
+                    <input type="file" class="form-control" id="uploadFile" aria-describedby="uploadFileHelp">
+                    <div id="uploadFileHelp" class="form-text">Mandatory, select a file to upload.</div>
+                  </div>
+                  <div class="form-group d-flex justify-content-end">
+                    <button type="button" class="btn btn-outline-secondary" onclick="upload(this, document.getElementById('uploadResult'));">Upload</button>
+                  </div>
+                </form>
+              </div>
+              <div id="uploadProgressBar" class="progress" role="progressbar" aria-label="Default striped example" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+                <div id="uploadProgressBarProgress" class="progress-bar progress-bar-striped"></div>
+              </div>
+              <div class="mb-3">
+                <p id="uploadResult" class="result"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- CPU -->
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cpu" aria-controls="cpu">
+              <div class="badge text-bg-warning text-wrap"><strong>Resources</strong></div><strong>&nbsp;/cpu</strong>
+            </button>
+          </h2>
+          <div id="cpu" class="accordion-collapse collapse" data-bs-parent="#endpoints">
+            <div class="accordion-body">
+              <div class="mb-3">
+                <strong class="text-primary">GET /cpu/load</strong><br />
+                <span class="text-primary">Asks the server to create some CPU load.</span>
+                <form>
+                  <div class="form-group">
+                    <label for="cpuLoadNbThreads" class="form-label">Number of threads</label>
+                    <input type="number" min="0" step="1" class="form-control" id="cpuLoadNbThreads" aria-describedby="cpuLoadNbThreadsHelp">
+                    <div id="cpuLoadNbThreadsHelp" class="form-text">Optional (defaults to 1), number of load threads to be started. Setting it to 0 starts as many threads as the number cores on the server.</div>
+                  </div>
+                  <div class="form-group">
+                    <label for="cpuLoadTimeout" class="form-label">Loop timeout</label>
+                    <input type="text" class="form-control" id="cpuLoadTimeout" aria-describedby="cpuLoadTimeoutHelp">
+                    <div id="cpuLoadTimeoutHelp" class="form-text">Optional (defaults to 0), timeout between each loop cycle. Must be in <a href="https://pkg.go.dev/time#ParseDuration" target="_blank">Golang duration format</a>.</div>
+                  </div>
+                  <div class="form-group d-flex justify-content-end">
+                    <button type="button" class="btn btn-outline-secondary" onclick="cpuLoad(this, document.getElementById('cpuLoadResult'));">Increase</button>
+                  </div>
+                </form>
+              </div>
+              <div class="mb-3">
+                <p id="cpuLoadResult" class="result"></p>
+              </div>
+              <hr />
+              <div class="mb-3">
+                <strong class="text-primary">GET /cpu/reset</strong><br />
+                <span class="text-primary">Resests all previous CPU load requests.</span>
+                <form>
+                  <div class="form-group d-flex justify-content-end">
+                    <button type="button" class="btn btn-outline-secondary" onclick="cpuReset(this, document.getElementById('cpuResetResult'));">Reset</button>
+                  </div>
+                </form>
+              </div>
+              <div class="mb-3">
+                <p id="cpuResetResult" class="result"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- RAM -->
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#ram" aria-controls="ram">
+              <div class="badge text-bg-warning text-wrap"><strong>Resources</strong></div><strong>&nbsp;/ram</strong>
+            </button>
+          </h2>
+          <div id="ram" class="accordion-collapse collapse" data-bs-parent="#endpoints">
+            <div class="accordion-body">
+              <div class="mb-3">
+                <strong class="text-primary">GET /ram/increase</strong><br />
+                <span class="text-primary">Asks the server to increase its RAM usage.</span>
+                <form>
+                  <div class="form-group">
+                    <label for="ramIncreaseSize" class="form-label">Size</label>
+                    <input type="number" min="0" step="1" class="form-control" id="ramIncreaseSize" aria-describedby="ramIncreaseSizeHelp">
+                    <div id="ramIncreaseSizeHelp" class="form-text">Optional (defaults to 1MiB), size of the memory to increase (in bytes).</div>
+                  </div>
+                  <div class="form-group d-flex justify-content-end">
+                    <button type="button" class="btn btn-outline-secondary" onclick="ramIncrease(this, document.getElementById('ramIncreaseResult'));">Increase</button>
+                  </div>
+                </form>
+              </div>
+              <div class="mb-3">
+                <p id="ramIncreaseResult" class="result"></p>
+              </div>
+              <hr />
+              <div class="mb-3">
+                <strong class="text-primary">GET /ram/decrease</strong><br />
+                <span class="text-primary">Asks the server to decrease its RAM usage (from previously increased requests).</span>
+                <form>
+                  <div class="form-group">
+                    <label for="ramDecreaseSize" class="form-label">Size</label>
+                    <input type="number" min="0" step="1" class="form-control" id="ramDecreaseSize" aria-describedby="ramDecreaseSizeHelp">
+                    <div id="ramDecreaseSizeHelp" class="form-text">Optional (defaults to 1MiB), size of the memory to increase (in bytes).</div>
+                  </div>
+                  <div class="form-group d-flex justify-content-end">
+                    <button type="button" class="btn btn-outline-secondary" onclick="ramDecrease(this, document.getElementById('ramDecreaseResult'));">Decrease</button>
+                  </div>
+                </form>
+              </div>
+              <div class="mb-3">
+                <p id="ramDecreaseResult" class="result"></p>
+              </div>
+              <hr />
+              <div class="mb-3">
+                <strong class="text-primary">GET /ram/leak</strong><br />
+                <span class="text-primary">Asks the server to simulate a memory leak.</span>
+                <form>
+                  <div class="form-group">
+                    <label for="ramLeakSize" class="form-label">Size</label>
+                    <input type="number" min="0" step="1" class="form-control" id="ramLeakSize" aria-describedby="ramLeakSizeHelp">
+                    <div id="ramLeakSizeHelp" class="form-text">Optional (defaults to 1MiB), size of the memory to leak per frequency (in bytes).</div>
+                  </div>
+                  <div class="form-group">
+                    <label for="ramLeakFrequency" class="form-label">Frequency</label>
+                    <input type="text" class="form-control" id="ramLeakFrequency" aria-describedby="ramLeakFrequencyHelp">
+                    <div id="ramLeakFrequencyHelp" class="form-text">Optional (defaults to 0), frequency at witch the server leaks RAM. Must be in <a href="https://pkg.go.dev/time#ParseDuration" target="_blank">Golang duration format</a>.</div>
+                  </div>
+                  <div class="form-group d-flex justify-content-end">
+                    <button type="button" class="btn btn-outline-secondary" onclick="ramLeak(this, document.getElementById('ramLeakResult'));">Leak</button>
+                  </div>
+                </form>
+              </div>
+              <div class="mb-3">
+                <p id="ramLeakResult" class="result"></p>
+              </div>
+              <hr />
+              <div class="mb-3">
+                <strong class="text-primary">GET /ram/reset</strong><br />
+                <span class="text-primary">Resests all previous RAM leak requests. You may need to call this endpoint multiple times for Golang's garbage collector to actually release the RAM back to the OS.</span>
+                <form>
+                  <div class="form-group d-flex justify-content-end">
+                    <button type="button" class="btn btn-outline-secondary" onclick="ramReset(this, document.getElementById('ramResetResult'));">Reset</button>
+                  </div>
+                </form>
+              </div>
+              <div class="mb-3">
+                <p id="ramResetResult" class="result"></p>
+              </div>
+              <hr />
+              <div class="mb-3">
+                <strong class="text-primary">GET /ram/status</strong><br />
+                <span class="text-primary">Asks the server to give a status about its memory usage.</span>
+                <form>
+                  <div class="form-group d-flex justify-content-end">
+                    <button type="button" class="btn btn-outline-secondary" onclick="ramStatus(this, document.getElementById('ramStatusResult'));">Get Status</button>
+                  </div>
+                </form>
+              </div>
+              <div class="mb-3">
+                <p id="ramStatusResult" class="result"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- started -->
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#started" aria-controls="started">
+              <div class="badge text-bg-success text-wrap"><strong>Monitoring</strong></div><strong>&nbsp;/started</strong>
+            </button>
+          </h2>
+          <div id="started" class="accordion-collapse collapse" data-bs-parent="#endpoints">
+            <div class="accordion-body">
+              <div class="mb-3">
+                <strong class="text-primary">GET</strong><br />
+                <span class="text-primary">Tests the monitoring endpoint.</span>
+                <form>
+                  <div class="form-group d-flex justify-content-end">
+                    <button type="button" class="btn btn-outline-secondary" onclick="startedGet(this, document.getElementById('startedGetResult'));">Check</button>
+                  </div>
+                </form>
+              </div>
+              <div class="mb-3">
+                <p id="startedGetResult" class="result"></p>
+              </div>
+              <hr />
+              <div class="mb-3">
+                <strong class="text-primary">POST</strong><br />
+                <span class="text-primary">Modifies the monitoring endpoint behavior.</span>
+                <form>
+                  <div class="form-group">
+                    <input type="checkbox" class="form-check-input" id="startedFail" aria-describedby="startedFailHelp">
+                    <label for="startedFail" class="form-check-label">Fail</label>
+                    <div id="startedFailHelp" class="form-text">Optional (defaults to false), configure the "GET /started" endpoint to fail.</div>
+                  </div>
+                  <div class="form-group">
+                    <label for="startedNbFailures" class="form-label">Number of failures</label>
+                    <input type="number" min="0" step="1" class="form-control" id="startedNbFailures" aria-describedby="startedNbFailuresHelp">
+                    <div id="startedNbFailuresHelp" class="form-text">Optional (defaults to 0), number of failures the "GET /started" endpoint should return before returning ok (if fail is set to true, this will start decreasing once fail is set back to false).</div>
+                  </div>
+                  <div class="form-group">
+                    <label for="startedDelay" class="form-label">Delay</label>
+                    <input type="text" class="form-control" id="startedDelay" aria-describedby="startedDelayHelp">
+                    <div id="startedDelayHelp" class="form-text">Optional (defaults to 0), delay before the "GET /started" endpoint answers. Must be in <a href="https://pkg.go.dev/time#ParseDuration" target="_blank">Golang duration format</a>.</div>
+                  </div>
+                  <div class="form-group d-flex justify-content-end">
+                    <button type="button" class="btn btn-outline-secondary" onclick="startedPost(this, document.getElementById('startedPostResult'));">Modify</button>
+                  </div>
+                </form>
+              </div>
+              <div class="mb-3">
+                <p id="startedPostResult" class="result"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- alive -->
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#alive" aria-controls="alive">
+              <div class="badge text-bg-success text-wrap"><strong>Monitoring</strong></div><strong>&nbsp;/alive</strong>
+            </button>
+          </h2>
+          <div id="alive" class="accordion-collapse collapse" data-bs-parent="#endpoints">
+            <div class="accordion-body">
+              <div class="mb-3">
+                <strong class="text-primary">GET</strong><br />
+                <span class="text-primary">Tests the monitoring endpoint.</span>
+                <form>
+                  <div class="form-group d-flex justify-content-end">
+                    <button type="button" class="btn btn-outline-secondary" onclick="aliveGet(this, document.getElementById('aliveGetResult'));">Check</button>
+                  </div>
+                </form>
+              </div>
+              <div class="mb-3">
+                <p id="aliveGetResult" class="result"></p>
+              </div>
+              <hr />
+              <div class="mb-3">
+                <strong class="text-primary">POST</strong><br />
+                <span class="text-primary">Modifies the monitoring endpoint behavior.</span>
+                <form>
+                  <div class="form-group">
+                    <input type="checkbox" class="form-check-input" id="aliveFail" aria-describedby="aliveFailHelp">
+                    <label for="aliveFail" class="form-check-label">Fail</label>
+                    <div id="aliveFailHelp" class="form-text">Optional (defaults to false), configure the "GET /alive" endpoint to fail.</div>
+                  </div>
+                  <div class="form-group">
+                    <label for="aliveNbFailures" class="form-label">Number of failures</label>
+                    <input type="number" min="0" step="1" class="form-control" id="aliveNbFailures" aria-describedby="aliveNbFailuresHelp">
+                    <div id="aliveNbFailuresHelp" class="form-text">Optional (defaults to 0), number of failures the "GET /alive" endpoint should return before returning ok (if fail is set to true, this will start decreasing once fail is set back to false).</div>
+                  </div>
+                  <div class="form-group">
+                    <label for="aliveDelay" class="form-label">Delay</label>
+                    <input type="text" class="form-control" id="aliveDelay" aria-describedby="aliveDelayHelp">
+                    <div id="aliveDelayHelp" class="form-text">Optional (defaults to 0), delay before the "GET /alive" endpoint answers. Must be in <a href="https://pkg.go.dev/time#ParseDuration" target="_blank">Golang duration format</a>.</div>
+                  </div>
+                  <div class="form-group d-flex justify-content-end">
+                    <button type="button" class="btn btn-outline-secondary" onclick="alivePost(this, document.getElementById('alivePostResult'));">Modify</button>
+                  </div>
+                </form>
+              </div>
+              <div class="mb-3">
+                <p id="alivePostResult" class="result"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- ready -->
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#ready" aria-controls="ready">
+              <div class="badge text-bg-success text-wrap"><strong>Monitoring</strong></div><strong>&nbsp;/ready</strong>
+            </button>
+          </h2>
+          <div id="ready" class="accordion-collapse collapse" data-bs-parent="#endpoints">
+            <div class="accordion-body">
+              <div class="mb-3">
+                <strong class="text-primary">GET</strong><br />
+                <span class="text-primary">Tests the monitoring endpoint.</span>
+                <form>
+                  <div class="form-group d-flex justify-content-end">
+                    <button type="button" class="btn btn-outline-secondary" onclick="readyGet(this, document.getElementById('readyGetResult'));">Check</button>
+                  </div>
+                </form>
+              </div>
+              <div class="mb-3">
+                <p id="readyGetResult" class="result"></p>
+              </div>
+              <hr />
+              <div class="mb-3">
+                <strong class="text-primary">POST</strong><br />
+                <span class="text-primary">Modifies the monitoring endpoint behavior.</span>
+                <form>
+                  <div class="form-group">
+                    <input type="checkbox" class="form-check-input" id="readyFail" aria-describedby="readyFailHelp">
+                    <label for="readyFail" class="form-check-label">Fail</label>
+                    <div id="readyFailHelp" class="form-text">Optional (defaults to false), configure the "GET /ready" endpoint to fail.</div>
+                  </div>
+                  <div class="form-group">
+                    <label for="readyNbFailures" class="form-label">Number of failures</label>
+                    <input type="number" min="0" step="1" class="form-control" id="readyNbFailures" aria-describedby="readyNbFailuresHelp">
+                    <div id="readyNbFailuresHelp" class="form-text">Optional (defaults to 0), number of failures the "GET /ready" endpoint should return before returning ok (if fail is set to true, this will start decreasing once fail is set back to false).</div>
+                  </div>
+                  <div class="form-group">
+                    <label for="readyDelay" class="form-label">Delay</label>
+                    <input type="text" class="form-control" id="readyDelay" aria-describedby="readyDelayHelp">
+                    <div id="readyDelayHelp" class="form-text">Optional (defaults to 0), delay before the "GET /ready" endpoint answers. Must be in <a href="https://pkg.go.dev/time#ParseDuration" target="_blank">Golang duration format</a>.</div>
+                  </div>
+                  <div class="form-group d-flex justify-content-end">
+                    <button type="button" class="btn btn-outline-secondary" onclick="readyPost(this, document.getElementById('readyPostResult'));">Modify</button>
+                  </div>
+                </form>
+              </div>
+              <div class="mb-3">
+                <p id="readyPostResult" class="result"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- database -->
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#database" aria-controls="database">
+              <div class="badge text-bg-primary text-wrap"><strong>External</strong></div><strong>&nbsp;/database</strong>
+            </button>
+          </h2>
+          <div id="database" class="accordion-collapse collapse" data-bs-parent="#endpoints">
+            <div class="accordion-body">
+              <div class="mb-3">
+                <div class="accordion" id="databaseConnectionInfo">
+                  <div class="accordion-item">
+                    <h2 class="accordion-header">
+                      <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#databaseConnection" aria-expanded="true" aria-controls="collapseOne">
+                        <strong class="text-secondary">Connection information</strong>
+                      </button>
+                    </h2>
+                    <div id="databaseConnection" class="accordion-collapse collapse show" data-bs-parent="#databaseConnectionInfo">
+                      <div class="accordion-body">
+                        <form>
+                          <div class="form-group">
+                            <label for="databaseEngine" class="form-check-label">Engine: </label>
+                            <select id="databaseEngine" class="form-select" onchange="databaseDriverChanged();">
+                              <option value="sqlserver">Microsoft SQL Server</option>
+                              <option value="mysql">MySQL</option>
+                              <option value="postgres" selected>PostgreSQL</option>
+                            </select>
+                          </div>
+                          <div class="form-group">
+                            <label for="databaseHost" class="form-label">Host</label>
+                            <input type="text" class="form-control" id="databaseHost" aria-describedby="databaseHostHelp">
+                            <div id="databaseHostHelp" class="form-text">Optional (defaults to localhost), URL or IP of the database server.</div>
+                          </div>
+                          <div class="form-group">
+                            <label for="databasePort" class="form-label">Port</label>
+                            <input type="number" min="1" max="65535" step="1" class="form-control" id="databasePort" aria-describedby="databasePortHelp">
+                            <div id="databasePortHelp" class="form-text">Optional (defaults to the default database port), port of the database server.</div>
+                          </div>
+                          <div class="form-group">
+                            <label for="databaseUsername" class="form-label">Username</label>
+                            <input type="text" class="form-control" id="databaseUsername" aria-describedby="databaseUsernameHelp">
+                            <div id="databaseUsernameHelp" class="form-text">Optional (defaults to none), username used to authenticate against the database.</div>
+                          </div>
+                          <div class="form-group">
+                            <label for="databasePassword" class="form-label">Password</label>
+                            <input type="password" class="form-control" id="databasePassword" aria-describedby="databasePasswordHelp">
+                            <div id="databasePasswordHelp" class="form-text">Optional (defaults to none), password used to authenticate against the database.</div>
+                          </div>
+                          <div class="form-group">
+                            <label for="databaseDBName" class="form-label">Database</label>
+                            <input type="text" class="form-control" id="databaseDBName" aria-describedby="databaseDBNameHelp">
+                            <div id="databaseDBNameHelp" class="form-text">Optional (defaults to none), the database name to connect to.</div>
+                          </div>
+                        </form>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="accordion-item">
+                    <h2 class="accordion-header">
+                      <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#databaseConnectionTLS" aria-expanded="false" aria-controls="collapseTwo">
+                        <strong class="text-secondary">TLS</strong>
+                      </button>
+                    </h2>
+                    <div id="databaseConnectionTLS" class="accordion-collapse collapse" data-bs-parent="#databaseConnectionInfo">
+                      <div class="accordion-body">
+                        <form>
+                          <div class="form-group">
+                            <div class="form-check form-switch">
+                              <input class="form-check-input" type="checkbox" role="switch" id="databaseConnectionTLSEnable" onchange="databaseTLSEnableChanged(this.checked);">
+                              <label class="form-check-label" for="databaseConnectionTLSEnable">Enable</label>
+                            </div>
+                          </div>
+                          <div id="dbConnectionTLSConfig" class="hidden-form-part">
+                            <div class="form-group">
+                              <input type="checkbox" class="form-check-input" id="databaseConnectionTLSInsecure" aria-describedby="databaseConnectionTLSInsecureHelp" onchange="databaseTLSInsecureChanged(this.checked);">
+                              <label for="databaseConnectionTLSInsecure" class="form-check-label">Insecure</label>
+                              <div id="databaseConnectionTLSInsecureHelp" class="form-text">Asks the server to not verify the database certificate. Use SSL mode "require" for an equivalent with PostgreSQL.</div>
+                            </div>
+                            <div class="form-group">
+                              <label for="databaseTLSMode" class="form-check-label">SSL mode (PostgreSQL only): </label>
+                              <select id="databaseTLSMode" class="form-select" aria-describedby="databaseTLSModeHelp" onchange="databaseTLSModeChanged();">
+                                <option value="require" selected>Require</option>
+                                <option value="verify-ca">Verify CA</option>
+                                <option value="verify-full">Verify full</option>
+                              </select>
+                              <div id="databaseTLSModeHelp" class="form-text">Mandatory. For more information, please visit the <a href="https://www.postgresql.org/docs/current/libpq-ssl.html" target="_blank">official documentation</a>.</div>
+                            </div>
+                            <div class="form-group">
+                              <label for="databaseConnectionTLSCA" class="form-label">CA certificate</label>
+                              <input type="file" class="form-control" id="databaseConnectionTLSCA" aria-describedby="databaseConnectionTLSCAHelp">
+                              <div id="databaseConnectionTLSCAHelp" class="form-text">Optional (defaults to OS installed CAs), PEM encoded </div>
+                            </div>
+                            <div class="form-group">
+                              <label for="databaseConnectionTLSUserCert" class="form-label">User certificate</label>
+                              <input type="file" class="form-control" id="databaseConnectionTLSUserCert" aria-describedby="databaseConnectionTLSUserCertHelp">
+                              <div id="databaseConnectionTLSUserCertHelp" class="form-text">Optional (defaults to none), client certificate used to authenticate against the server, PEM encoded.</div>
+                            </div>
+                            <div class="form-group">
+                              <label for="databaseConnectionTLSUserKey" class="form-label">User certificate key</label>
+                              <input type="file" class="form-control" id="databaseConnectionTLSUserKey" aria-describedby="databaseConnectionTLSUserKeyHelp">
+                              <div id="databaseConnectionTLSUserKeyHelp" class="form-text">Optional (defaults to none), client certificate key used to authenticate against the server, PEM encoded.</div>
+                            </div>
+                          </div>
+                        </form>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <hr />
+              <div class="mb-3">
+                <strong class="text-primary">POST /database/connect</strong><br />
+                <span class="text-primary">Tries to open a database connection.</span>
+                <form>
+                  <div class="form-group d-flex justify-content-end">
+                    <button type="button" class="btn btn-outline-secondary" onclick="databaseConnect(this, document.getElementById('databaseConnectResult'));">Connect</button>
+                  </div>
+                </form>
+              </div>
+              <div class="mb-3">
+                <p id="databaseConnectResult" class="result"></p>
+              </div>
+              <hr />
+              <div class="mb-3">
+                <strong class="text-primary">POST /database/query</strong><br />
+                <span class="text-primary">Asks the server to query the database.</span>
+                <form>
+                  <div class="form-group">
+                    <label for="databaseQueryQuery" class="form-label">Query</label>
+                    <input type="text" class="form-control" id="databaseQueryQuery" aria-describedby="databaseQueryQueryHelp">
+                    <div id="databaseQueryQueryHelp" class="form-text">Mandatory, the SQL query the server will run.</div>
+                  </div>
+                  <div class="form-group d-flex justify-content-end">
+                    <button type="button" class="btn btn-outline-secondary" onclick="databaseQuery(this, document.getElementById('databaseQueryResult'));">Run query</button>
+                  </div>
+                </form>
+              </div>
+              <div class="mb-3">
+                <p id="databaseQueryResult" class="result"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- ping -->
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#ping" aria-controls="ping">
+              <div class="badge text-bg-primary text-wrap"><strong>External</strong></div><strong>&nbsp;/ping</strong>
+            </button>
+          </h2>
+          <div id="ping" class="accordion-collapse collapse" data-bs-parent="#endpoints">
+            <div class="accordion-body">
+              <div class="mb-3">
+                <strong class="text-primary">GET</strong><br />
+                <span class="text-primary">Pings a server.</span>
+                <form>
+                  <div class="form-group">
+                    <label for="pingHost" class="form-label">Host/IP</label>
+                    <input type="text" class="form-control" id="pingHost" aria-describedby="pingHostHelp">
+                    <div id="pingHostHelp" class="form-text">Mandatory, hostname or IP of the server to ping.</div>
+                  </div>
+                  <div class="form-group">
+                    <label for="pingCount" class="form-label">Count</label>
+                    <input type="number" min="1" step="1" class="form-control" id="pingCount" aria-describedby="pingCountHelp">
+                    <div id="pingCountHelp" class="form-text">Optional (defaults to 3), number of pings to send.</div>
+                  </div>
+                  <div class="form-group d-flex justify-content-end">
+                    <button type="button" class="btn btn-outline-secondary" onclick="ping(this, document.getElementById('pingResult'));">Ping</button>
+                  </div>
+                </form>
+              </div>
+              <div class="mb-3">
+                <p id="pingResult" class="result"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- request -->
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#request" aria-controls="request">
+              <div class="badge text-bg-primary text-wrap"><strong>External</strong></div><strong>&nbsp;/request</strong>
+            </button>
+          </h2>
+          <div id="request" class="accordion-collapse collapse" data-bs-parent="#endpoints">
+            <div class="accordion-body">
+              <div class="mb-3">
+                <strong class="text-primary">POST</strong><br />
+                <span class="text-primary">Asks the server to perform a HTTP request, and optionaly return the output.</span>
+                <form>
+                  <div class="form-group">
+                    <label for="requestURL" class="form-label">URL</label>
+                    <input type="text" class="form-control" id="requestURL" aria-describedby="requestURLHelp" value="http://" onkeyup="requestURLChanged(this.value);">
+                    <div id="requestURLHelp" class="form-text">Mandatory, URL to reach out to. It must contains the scheme, i.e.: "http://", "https://", "ws://" or "wss://"</div>
+                  </div>
+                  <div class="form-group">
+                    <label for="requestMethod" class="form-check-label">Method: </label>
+                    <select id="requestMethod" class="form-select">
+                      <option value="connect">CONNECT</option>
+                      <option value="delete">DELETE</option>
+                      <option value="get" selected>GET</option>
+                      <option value="options">OPTIONS</option>
+                      <option value="head">HEAD</option>
+                      <option value="patch">PATCH</option>
+                      <option value="post">POST</option>
+                      <option value="put">PUT</option>
+                      <option value="trace">TRACE</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label for="requestConnectionTimeout" class="form-label">Connection timeout</label>
+                    <input type="text" class="form-control" id="requestConnectionTimeout" aria-describedby="requestConnectionTimeoutHelp">
+                    <div id="requestConnectionTimeoutHelp" class="form-text">Optional (defaults to 20s), connection timeout for the request. Must be in <a href="https://pkg.go.dev/time#ParseDuration" target="_blank">Golang duration format</a>.</div>
+                  </div>
+                  <div class="form-group">
+                    <input type="checkbox" class="form-check-input" id="requestEchoHeaders" aria-describedby="requestEchoHeadersHelp">
+                    <label for="requestEchoHeaders" class="form-check-label">Echo headers</label>
+                    <div id="requestEchoHeadersHelp" class="form-text">Asks the server to print request answer's headers.</div>
+                  </div>
+                  <div class="form-group">
+                    <input type="checkbox" class="form-check-input" id="requestEchoBody" aria-describedby="requestEchoBodyHelp">
+                    <label for="requestEchoBody" class="form-check-label">Echo body</label>
+                    <div id="requestEchoBodyHelp" class="form-text">Asks the server to print request answer's body.</div>
+                  </div>
+                  <div id="requestTLSConfig" class="hidden-form-part">
+                    <div class="form-group">
+                      <input type="checkbox" class="form-check-input" id="requestTLSInsecure" aria-describedby="requestTLSInsecureHelp" onchange="requestTLSInsecureChanged(this.checked);">
+                      <label for="requestTLSInsecure" class="form-check-label">Insecure TLS</label>
+                      <div id="requestTLSInsecureHelp" class="form-text">Asks the server to not verify the database certificate. Use SSL mode "require" for an equivalent with PostgreSQL.</div>
+                    </div>
+                    <div class="form-group">
+                      <label for="requestTLSCA" class="form-label">CA certificate</label>
+                      <input type="file" class="form-control" id="requestTLSCA" aria-describedby="requestTLSCAHelp">
+                      <div id="requestTLSCAHelp" class="form-text">Optional (defaults to OS installed CAs), PEM encoded </div>
+                    </div>
+                    <div class="form-group">
+                      <label for="requestTLSUserCert" class="form-label">User certificate</label>
+                      <input type="file" class="form-control" id="requestTLSUserCert" aria-describedby="requestTLSUserCertHelp">
+                      <div id="requestTLSUserCertHelp" class="form-text">Optional (defaults to none), client certificate used to authenticate against the server, PEM encoded.</div>
+                    </div>
+                    <div class="form-group">
+                      <label for="requestTLSUserKey" class="form-label">User certificate key</label>
+                      <input type="file" class="form-control" id="requestTLSUserKey" aria-describedby="requestTLSUserKeyHelp">
+                      <div id="requestTLSUserKeyHelp" class="form-text">Optional (defaults to none), client certificate key used to authenticate against the server, PEM encoded.</div>
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" role="switch" id="requestProxyEnable" onchange="requestProxyChanged(this.checked);">
+                      <label class="form-check-label" for="requestProxyEnable">Enable proxy</label>
+                    </div>
+                  </div>
+                  <div id="requestProxyConfig" class="hidden-form-part">
+                    <div class="form-group">
+                      <label for="requestProxyURL" class="form-label">Proxy URL</label>
+                      <input type="text" class="form-control" id="requestProxyURL" aria-describedby="requestProxyURLHelp" value="http://">
+                      <div id="requestProxyURLHelp" class="form-text">Mandatory when proxy is activated, URL of the proxy. It must contains the scheme, i.e.: "http://" or "https://".</div>
+                    </div>
+                    <div class="form-group">
+                      <label for="requestProxyUsername" class="form-label">Username</label>
+                      <input type="text" class="form-control" id="requestProxyUsername" aria-describedby="requestProxyUsernameHelp">
+                      <div id="requestProxyUsernameHelp" class="form-text">Optional (defaults to none), username used to authenticate against the proxy.</div>
+                    </div>
+                    <div class="form-group">
+                      <label for="requestProxyPassword" class="form-label">Password</label>
+                      <input type="password" class="form-control" id="requestProxyPassword" aria-describedby="requestProxyPasswordHelp">
+                      <div id="requestProxyPasswordHelp" class="form-text">Optional (defaults to none), password used to authenticate against the proxy.</div>
+                    </div>
+                  </div>
+                  <div class="form-group d-flex justify-content-end">
+                    <button type="button" class="btn btn-outline-secondary" onclick="request(this, document.getElementById('requestResult'));">Run request</button>
+                  </div>
+                </form>
+              </div>
+              <div class="mb-3">
+                <p id="requestResult" class="result"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- tcp -->
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#tcp" aria-controls="tcp">
+              <div class="badge text-bg-primary text-wrap"><strong>External</strong></div><strong>&nbsp;/tcp</strong>
+            </button>
+          </h2>
+          <div id="tcp" class="accordion-collapse collapse" data-bs-parent="#endpoints">
+            <div class="accordion-body">
+              <div class="mb-3">
+                <strong class="text-primary">POST</strong><br />
+                <span class="text-primary">Asks the server to perform a TCP request, and optionaly return the output.</span>
+                <form>
+                  <div class="form-group">
+                    <label for="tcpHost" class="form-label">Host</label>
+                    <input type="text" class="form-control" id="tcpHost" aria-describedby="tcpHostHelp">
+                    <div id="tcpHostHelp" class="form-text">Mandatory, the host and port of the service to reach out to. It must NOT contains the scheme, i.e.: "tcp://".</div>
+                  </div>
+                  <div class="form-group">
+                    <label for="tcpConnectionTimeout" class="form-label">Connection timeout</label>
+                    <input type="text" class="form-control" id="tcpConnectionTimeout" aria-describedby="tcpConnectionTimeoutHelp">
+                    <div id="tcpConnectionTimeoutHelp" class="form-text">Optional (defaults to 20s), connection timeout for the request. Must be in <a href="https://pkg.go.dev/time#ParseDuration" target="_blank">Golang duration format</a>.</div>
+                  </div>
+                  <div class="form-group">
+                    <input type="checkbox" class="form-check-input" id="tcpEchoBody" aria-describedby="tcpEchoBodyHelp" onchange="tcpEchoBodyChanged(this.checked);">
+                    <label for="tcpEchoBody" class="form-check-label">Echo body</label>
+                    <div id="tcpEchoBodyHelp" class="form-text">Asks the server to print request answer's body.</div>
+                  </div>
+                  <div class="form-group">
+                    <label for="tcpEchoBodySize" class="form-label">Echo body max size</label>
+                    <input type="number" min="0" step="1" class="form-control" id="tcpEchoBodySize" aria-describedby="tcpEchoBodySizeHelp" disabled>
+                    <div id="tcpEchoBodySizeHelp" class="form-text">Optional (defaults to 1MiB), maximum size of the remote server returned data to echo.</div>
+                  </div>
+                  <div class="form-group">
+                    <div class="form-check form-switch">
+                      <input class="form-check-input" type="checkbox" role="switch" id="tcpTLSEnable" onchange="tcpTLSEnabledChanged(this.checked);">
+                      <label class="form-check-label" for="tcpTLSEnable">Enable TLS</label>
+                    </div>
+                  </div>
+                  <div id="tcpTLSConfig" class="hidden-form-part">
+                    <div class="form-group">
+                      <input type="checkbox" class="form-check-input" id="tcpTLSInsecure" aria-describedby="tcpTLSInsecureHelp" onchange="tcpTLSInsecureChanged(this.checked);">
+                      <label for="tcpTLSInsecure" class="form-check-label">Insecure TLS</label>
+                      <div id="tcpTLSInsecureHelp" class="form-text">Asks the server to not verify the database certificate. Use SSL mode "require" for an equivalent with PostgreSQL.</div>
+                    </div>
+                    <div class="form-group">
+                      <label for="tcpTLSCA" class="form-label">CA certificate</label>
+                      <input type="file" class="form-control" id="tcpTLSCA" aria-describedby="tcpTLSCAHelp">
+                      <div id="tcpTLSCAHelp" class="form-text">Optional (defaults to OS installed CAs), PEM encoded </div>
+                    </div>
+                    <div class="form-group">
+                      <label for="tcpTLSUserCert" class="form-label">User certificate</label>
+                      <input type="file" class="form-control" id="tcpTLSUserCert" aria-describedby="tcpTLSUserCertHelp">
+                      <div id="tcpTLSUserCertHelp" class="form-text">Optional (defaults to none), client certificate used to authenticate against the server, PEM encoded.</div>
+                    </div>
+                    <div class="form-group">
+                      <label for="tcpTLSUserKey" class="form-label">User certificate key</label>
+                      <input type="file" class="form-control" id="tcpTLSUserKey" aria-describedby="tcpTLSUserKeyHelp">
+                      <div id="tcpTLSUserKeyHelp" class="form-text">Optional (defaults to none), client certificate key used to authenticate against the server, PEM encoded.</div>
+                    </div>
+                  </div>
+                  <div class="form-group d-flex justify-content-end">
+                    <button type="button" class="btn btn-outline-secondary" onclick="tcp(this, document.getElementById('tcpResult'));">Run TCP request</button>
+                  </div>
+                </form>
+              </div>
+              <div class="mb-3">
+                <p id="tcpResult" class="result"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- CORS -->
+        <div class="accordion-item">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#cors" aria-controls="cors">
+              <div class="badge text-bg-primary text-wrap"><strong>External</strong></div><strong>&nbsp;Cross-Origin Resource Sharing</strong>
+            </button>
+          </h2>
+          <div id="cors" class="accordion-collapse collapse" data-bs-parent="#endpoints">
+            <div class="accordion-body">
+              <div class="mb-3">
+                <div class="text-primary">This allows you to test accessing other resources on the network from this domain. <a href="https://en.wikipedia.org/wiki/Cross-origin_resource_sharing" target="_blank">More info</a>.</div>
+                <form>
+                  <div class="form-group">
+                    <label for="corsMethod" class="form-check-label">Method: </label>
+                    <select id="corsMethod" class="form-select" aria-describedby="corsMethodHelp">
+                      <option value="DELETE">DELETE</option>
+                      <option value="GET" selected>GET</option>
+                      <option value="HEAD">HEAD</option>
+                      <option value="OPTIONS">OPTIONS</option>
+                      <option value="PATCH">PATCH</option>
+                      <option value="POST">POST</option>
+                      <option value="PUT">PUT</option>
+                      <option value="TRACE">TRACE</option>
+                    </select>
+                    <div id="corsMethodHelp" class="form-text">Will be ignored if you are testing a websocket, since <a href="https://datatracker.ietf.org/doc/html/rfc6455" target="_blank">RFC 6455</a> forces websockets to use the "GET" method.</div>
+                  </div>
+                  <div class="form-group">
+                    <label for="corsURL" class="form-label">URL</label>
+                    <input type="text" class="form-control" id="corsURL" aria-describedby="corsURLHelp">
+                    <div id="corsURLHelp" class="form-text">Mandatory, the URL to reach out to. Must start with one of: http://, https://, ws:// or wss://.</div>
+                  </div>
+                  <div class="form-group d-flex justify-content-end">
+                    <button type="button" class="btn btn-outline-secondary" onclick="cors(this, document.getElementById('corsResult'));">Test</button>
+                  </div>
+                </form>
+              </div>
+              <div class="mb-3">
+                <p id="corsResult" class="result"></p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- social -->
+    <div class="position-relative container top-space">
+      <div class="social d-flex justify-content-center">
+        <a href="https://github.com/kanshiroron/integration-toolbox-webserver" target="_blank"><img src="./github.png" alt="GitHub project page" /></a>
+      </div>
+    </div>
+    <!-- credits -->
+    <div class="position-relative container top-space">
+      <div class="d-flex justify-content-center">
+        <p class="credits">Logo created by <a href="https://www.flaticon.com/free-icon/software-testing_10435234" title="FlatIcon" class="link-secondary">Freepik</a></p>
+      </div>
+    </div>
+  </body>
+</html>

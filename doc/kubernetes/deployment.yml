@@ -1,0 +1,118 @@
+# config map
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: integration-toolbox-webserver
+  labels:
+    app: integration-toolbox-webserver
+data:
+  # all values are the same as default ones.
+
+  # general
+  DEBUG: "false"
+  LISTEN_ON: ":8080"
+  MAX_FORM_SIZE: "102400"
+  # STATIC_FOLDER: "/static"
+  TEMP_FOLDER: "/tmp/integration-toolbox-webserver"
+
+  # basic auth
+  # BASIC_AUTH_USERNAME: "admin"
+  # BASIC_AUTH_PASSWORD: "password"
+
+  # TLS
+  # SERVER_TLS_FILE: "/path/to/cert/file.crt"
+  # SERVER_TLS_KEY: "/path/to/cert/key/file.key"
+
+  # monitoring
+  # startup probe
+  STARTUP_PROBE_STATUS_OK: "200"
+  STARTUP_PROBE_STATUS_ERROR: "500"
+  STARTUP_PROBE_FAIL: "false"
+  STARTUP_PROBE_FAIL_NB: "0"
+  STARTUP_PROBE_DELAY: "0" # Golang duration https://pkg.go.dev/time#ParseDuration
+  # liveness probe
+  LIVENESS_PROBE_STATUS_OK: "200"
+  LIVENESS_PROBE_STATUS_ERROR: "500"
+  LIVENESS_PROBE_FAIL: "false"
+  LIVENESS_PROBE_FAIL_NB: "0"
+  LIVENESS_PROBE_DELAY: "0" # Golang duration https://pkg.go.dev/time#ParseDuration
+  # readiness probe
+  READINESS_PROBE_STATUS_OK: "200"
+  READINESS_PROBE_STATUS_ERROR: "500"
+  READINESS_PROBE_FAIL: "false"
+  READINESS_PROBE_FAIL_NB: "0"
+  READINESS_PROBE_DELAY: "0" # Golang duration https://pkg.go.dev/time#ParseDuration
+
+# deployment
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: integration-toolbox-webserver
+  labels:
+    app: integration-toolbox-webserver
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: integration-toolbox-webserver
+  template:
+    metadata:
+      labels:
+        app: integration-toolbox-webserver
+    spec:
+      restartPolicy: Always
+      containers:
+        - name: itw
+          image: kanshiroron/integration-toolbox-webserver #:0.1.0
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            capabilities:
+              add: ["NET_RAW"] # for the /ping endpoint to work
+          envFrom:
+            - configMapRef:
+                name: integration-toolbox-webserver
+          ports:
+          - containerPort: 8080
+            protocol: TCP
+            name: http
+          # resources:
+          #   requests:
+          #     memory: "64Mi"
+          #     cpu: "250m"
+          #   limits:
+          #     memory: "128Mi"
+          #     cpu: "500m"
+          startupProbe:
+            httpGet:
+              path: /started
+              port: http
+              scheme: HTTP # HTTPS if TLS is enabled
+          livenessProbe:
+            httpGet:
+              path: /alive
+              port: http
+              scheme: HTTP # HTTPS if TLS is enabled
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: http
+              scheme: HTTP # HTTPS if TLS is enabled
+
+# service
+---
+kind: Service
+apiVersion: v1
+metadata:
+  name: integration-toolbox-webserver
+  labels:
+    app: integration-toolbox-webserver
+spec:
+  selector:
+    app: integration-toolbox-webserver
+  ports:
+    - protocol: TCP
+      name: http
+      port: 80
+      targetPort: http
